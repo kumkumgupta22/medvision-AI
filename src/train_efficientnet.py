@@ -151,10 +151,14 @@ def main():
             parameter.requires_grad = False
     model = model.to(device)
 
-    optimizer = torch.optim.AdamW([
-        {"params": model.classifier.parameters(), "lr": args.head_learning_rate},
-        {"params": (p for p in model.features.parameters() if p.requires_grad), "lr": args.learning_rate},
-    ], weight_decay=0.01)
+    if args.freeze_epochs:
+        # Warm up only the new classification head; add the backbone after unfreezing.
+        optimizer = torch.optim.AdamW(model.classifier.parameters(), lr=args.head_learning_rate, weight_decay=0.01)
+    else:
+        optimizer = torch.optim.AdamW([
+            {"params": model.classifier.parameters(), "lr": args.head_learning_rate},
+            {"params": model.features.parameters(), "lr": args.learning_rate},
+        ], weight_decay=0.01)
     loss_fn = nn.CrossEntropyLoss(label_smoothing=0.05)
     scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(optimizer, mode="min", factor=0.5, patience=1)
     checkpoint_path = args.model_dir / "efficientnet_b0_best.pt"
@@ -170,13 +174,14 @@ def main():
         if args.freeze_epochs and epoch == args.freeze_epochs + 1:
             for parameter in model.features.parameters():
                 parameter.requires_grad = True
+            optimizer.add_param_group({"params": model.features.parameters(), "lr": args.learning_rate})
             print("Unfroze EfficientNet features for fine-tuning.", flush=True)
         train_loss, train_acc, _, _ = run_epoch(model, train_loader, loss_fn, device, optimizer, frozen)
         val_loss, val_acc, _, _ = run_epoch(model, val_loader, loss_fn, device)
         scheduler.step(val_loss)
         history.append({"epoch": epoch, "train_loss": train_loss, "train_accuracy": train_acc,
                         "val_loss": val_loss, "val_accuracy": val_acc,
-                        "backbone_lr": optimizer.param_groups[1]["lr"],
+                        "backbone_lr": optimizer.param_groups[1]["lr"] if len(optimizer.param_groups) > 1 else 0.0,
                         "head_lr": optimizer.param_groups[0]["lr"]})
         print(f"Epoch {epoch}/{args.epochs} - train loss {train_loss:.4f}, acc {train_acc:.4f}; "
               f"val loss {val_loss:.4f}, acc {val_acc:.4f}", flush=True)
@@ -231,3 +236,4 @@ def main():
 
 if __name__ == "__main__":
     main()
+
