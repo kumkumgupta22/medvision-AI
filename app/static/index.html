@@ -1,0 +1,87 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>MediVision AI · MRI Slice Classification</title>
+  <style>
+    :root { color-scheme: light; --ink:#18253b; --muted:#617087; --blue:#3268e8; --pale:#eef3ff; --line:#dce4ef; }
+    * { box-sizing:border-box; }
+    body { margin:0; background:#f5f7fb; color:var(--ink); font:16px/1.5 system-ui,-apple-system,"Segoe UI",sans-serif; }
+    header { padding:25px max(24px,calc((100% - 1040px)/2)); background:#fff; border-bottom:1px solid var(--line); }
+    .brand { font-weight:750; letter-spacing:.02em; font-size:19px; }
+    .brand span { color:var(--blue); }
+    main { width:min(920px,calc(100% - 32px)); margin:46px auto; }
+    .intro { margin-bottom:27px; }
+    .eyebrow { color:var(--blue); text-transform:uppercase; font-size:12px; font-weight:750; letter-spacing:.12em; }
+    h1 { margin:7px 0 8px; font-size:clamp(28px,4vw,40px); line-height:1.15; }
+    .intro p { margin:0; color:var(--muted); max-width:660px; }
+    .notice { background:#fff8e7; border:1px solid #f0d99f; border-radius:12px; padding:14px 16px; color:#644b12; margin:22px 0; font-size:14px; }
+    .card { background:#fff; border:1px solid var(--line); border-radius:18px; padding:25px; box-shadow:0 8px 32px #20345b0a; }
+    .drop { border:1.5px dashed #aab9d2; background:#fbfcff; border-radius:13px; padding:28px; text-align:center; }
+    .drop strong { display:block; font-size:17px; margin-bottom:5px; }
+    .drop small { color:var(--muted); }
+    input[type=file] { display:block; width:min(100%,420px); margin:18px auto 0; color:var(--muted); }
+    button { margin-top:20px; width:100%; border:0; border-radius:10px; padding:13px 18px; color:#fff; background:var(--blue); font-size:15px; font-weight:700; cursor:pointer; }
+    button:disabled { opacity:.6; cursor:wait; }
+    #status { min-height:24px; margin:14px 0 0; text-align:center; color:var(--muted); }
+    #result { display:none; margin-top:22px; }
+    .summary { background:var(--pale); border-radius:12px; padding:17px 19px; }
+    .summary span { color:var(--muted); font-size:13px; }
+    .summary h2 { margin:2px 0 0; font-size:24px; text-transform:capitalize; }
+    .result-grid { display:grid; grid-template-columns:1fr 1fr; gap:18px; margin-top:18px; }
+    .result-grid img { width:100%; border-radius:12px; border:1px solid var(--line); }
+    .result-grid h3 { margin:0 0 10px; font-size:16px; }
+    .prob { display:grid; grid-template-columns:95px 1fr 48px; gap:9px; align-items:center; margin:11px 0; font-size:13px; text-transform:capitalize; }
+    .track { background:#e8edf6; height:9px; overflow:hidden; border-radius:9px; }
+    .fill { background:var(--blue); height:100%; }
+    .prob b { text-align:right; font-variant-numeric:tabular-nums; }
+    footer { color:var(--muted); font-size:13px; margin-top:20px; text-align:center; }
+    @media(max-width:650px) { main{margin:28px auto}.card{padding:16px}.result-grid{grid-template-columns:1fr}header{padding:18px 20px} }
+  </style>
+</head>
+<body>
+  <header><div class="brand">MediVision <span>AI</span></div></header>
+  <main>
+    <section class="intro">
+      <div class="eyebrow">Project 604 · Academic prototype</div>
+      <h1>Brain MRI slice classification</h1>
+      <p>Upload one MRI image to see the CNN model’s predicted dataset class, class scores, and a Grad-CAM visualization.</p>
+    </section>
+    <div class="notice"><strong>Research use only.</strong> This prototype classifies individual images or slices and is not a clinical diagnostic system. Do not use its output to make patient-care decisions.</div>
+    <section class="card">
+      <form id="form">
+        <div class="drop"><strong>Select a brain MRI image</strong><small>JPEG or PNG · up to 15 MB</small><input id="file" type="file" accept="image/jpeg,image/png,image/webp" required></div>
+        <button id="submit" type="submit">Analyze image</button>
+      </form>
+      <p id="status" role="status"></p>
+      <div id="result">
+        <div class="summary"><span>Predicted dataset class · <span id="confidence"></span> model score</span><h2 id="class"></h2></div>
+        <div class="result-grid">
+          <div><h3>Grad-CAM visualization</h3><img id="cam" alt="Grad-CAM overlay showing image regions that influenced the prediction"></div>
+          <div><h3>Class scores</h3><div id="scores"></div><p style="color:#617087;font-size:13px">Scores are model outputs, not calibrated clinical probabilities.</p></div>
+        </div>
+      </div>
+    </section>
+    <footer>Four classes: glioma, meningioma, no tumor, and pituitary · CNN baseline</footer>
+  </main>
+  <script>
+    const form=document.querySelector('#form'),button=document.querySelector('#submit'),status=document.querySelector('#status'),result=document.querySelector('#result');
+    form.addEventListener('submit',async e=>{
+      e.preventDefault(); const file=document.querySelector('#file').files[0]; if(!file)return;
+      button.disabled=true; status.textContent='Processing image…'; result.style.display='none';
+      try {
+        const body=new FormData(); body.append('file',file);
+        const response=await fetch('/predict',{method:'POST',body}); const data=await response.json();
+        if(!response.ok)throw new Error(data.detail||'Could not analyze this image.');
+        document.querySelector('#class').textContent=data.predicted_class;
+        document.querySelector('#confidence').textContent=(data.confidence*100).toFixed(1)+'%';
+        document.querySelector('#cam').src=data.explanation_image;
+        document.querySelector('#scores').innerHTML=Object.entries(data.probabilities).map(([name,value])=>`<div class="prob"><span>${name}</span><div class="track"><div class="fill" style="width:${(value*100).toFixed(1)}%"></div></div><b>${(value*100).toFixed(1)}%</b></div>`).join('');
+        result.style.display='block'; status.textContent='';
+      } catch(error) { status.textContent=error.message; }
+      finally { button.disabled=false; }
+    });
+  </script>
+</body>
+</html>
