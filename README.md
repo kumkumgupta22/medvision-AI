@@ -4,7 +4,7 @@ Academic prototype for **brain MRI image/slice classification** into glioma, men
 
 ## Current measured baseline
 
-The saved CPU run used seed 42 and stopped after 2 epochs. It achieved **64.56% accuracy** on the held-out `Testing` split and **71.07% validation accuracy**. This is the measured result currently available; a 97% score is a target, not a promise. Do not tune against the test split or report unmeasured results as achieved.
+The latest CPU run used seed 42 and early-stopped after 7 epochs. Its best checkpoint was epoch 4 with **83.33% validation accuracy**. On the held-out `Testing` split it achieved **75.94% accuracy** and **75.25% macro F1**. A 97% score is a target, not a promise, and has not been achieved. Do not tune against the test split or report unmeasured results as achieved.
 
 ## Dataset
 
@@ -65,3 +65,4 @@ git push -u origin main
 ```
 
 Review `git status` before committing to confirm no data, weights, or secrets are staged.
+
