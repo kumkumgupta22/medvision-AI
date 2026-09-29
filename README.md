@@ -40,6 +40,15 @@ The data pipeline converts images to grayscale, resizes to 128×128, normalizes 
 
 Training writes a best checkpoint to `models/` and metrics, history, classification report, and confusion matrix to `outputs/`. Those generated files are ignored by Git. The training script accepts `--epochs`, `--batch-size`, `--learning-rate`, `--patience`, `--threads`, `--seed`, `--data`, `--output`, and `--model-dir`.
 
+## Transfer-learning experiment
+
+An EfficientNet-B0 option fine-tunes ImageNet-pretrained visual features and writes its own checkpoint and reports, leaving the baseline CNN intact. The first run downloads the official TorchVision pretrained weights; `--from-scratch` disables that download but is not expected to perform as well.
+
+```powershell
+python src\train_efficientnet.py --epochs 15 --batch-size 16 --seed 42
+```
+
+The script uses the same deterministic stratified validation split and held-out test set. It writes `models/efficientnet_b0_best.pt` and results under `outputs/efficientnet_b0/`. On CPU this can take a long time; use `--batch-size 8` if memory is limited. The current web app uses the baseline CNN checkpoint; compare the actual held-out metrics before changing the serving model. No accuracy target is guaranteed.
 ## Web app
 
 After training creates `models/cnn_baseline_best.pt`:
@@ -65,4 +74,5 @@ git push -u origin main
 ```
 
 Review `git status` before committing to confirm no data, weights, or secrets are staged.
+
 
