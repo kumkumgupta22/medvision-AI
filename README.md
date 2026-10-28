@@ -82,3 +82,15 @@ Review `git status` before committing to confirm no data, weights, or secrets ar
 
 
 
+
+## External dataset overlap audit
+
+A one-time audit used [BDNeuro-MRI Version 9](https://data.mendeley.com/datasets/zwr4ntf94j/9), a four-class dataset published under CC BY 4.0. Its published test split has 889 images. The external set was compared against all 7,200 local `Training` and `Testing` images: 458 were exact SHA-256 matches and 149 additional images were near matches at a 64-bit perceptual-hash Hamming distance of 5 or less. These 607 images were excluded, leaving 282 images for an overlap-filtered evaluation.
+
+On those remaining images, the saved EfficientNet-B0 checkpoint scored **76.95% accuracy** and **72.19% macro F1**. The remaining subset is class-imbalanced (136 glioma, 54 meningioma, 37 no tumor, 55 pituitary). Because of the extensive overlap and small filtered sample, this dataset does **not** qualify as a clean independent validation set, and these results should not be used to claim independent generalization or to tune the model. The evaluation is an overlap audit, not a clinical performance result. The dataset authors describe duplicate removal and stratified image-level splits; patient-level separation is not established in its included README.
+
+The dataset and generated reports remain local and are excluded from Git. To reproduce the overlap-filtered evaluation after downloading and extracting BDNeuro-MRI V9 into `data/external_validation/BDNeuro-MRI-V9/`:
+
+```powershell
+python src\evaluate_external.py --data data\external_validation\BDNeuro-MRI-V9 --reference-data data\brain_tumor --checkpoint models\efficientnet_b0_best.pt --output outputs\bdneuro_external_validation
+```
