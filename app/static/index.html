@@ -22,6 +22,10 @@
     .drop strong { display:block; font-size:17px; margin-bottom:5px; }
     .drop small { color:var(--muted); }
     input[type=file] { display:block; width:min(100%,420px); margin:18px auto 0; color:var(--muted); }
+    .model-choice { margin-top:18px; }
+    .model-choice label { display:block; font-weight:700; margin-bottom:7px; }
+    .model-choice select { width:100%; border:1px solid var(--line); border-radius:9px; padding:11px 12px; background:#fff; color:var(--ink); font:inherit; }
+    .model-choice small { display:block; margin-top:5px; color:var(--muted); }
     button { margin-top:20px; width:100%; border:0; border-radius:10px; padding:13px 18px; color:#fff; background:var(--blue); font-size:15px; font-weight:700; cursor:pointer; }
     button:disabled { opacity:.6; cursor:wait; }
     #status { min-height:24px; margin:14px 0 0; text-align:center; color:var(--muted); }
@@ -46,24 +50,25 @@
     <section class="intro">
       <div class="eyebrow">Project 604 · Academic prototype</div>
       <h1>Brain MRI slice classification</h1>
-      <p>Upload one MRI image to see the CNN model’s predicted dataset class, class scores, and a Grad-CAM visualization.</p>
+      <p>Choose a model and upload one MRI image to see its predicted dataset class, class scores, and an explanation visualization.</p>
     </section>
     <div class="notice"><strong>Research use only.</strong> This prototype classifies individual images or slices and is not a clinical diagnostic system. Do not use its output to make patient-care decisions.</div>
     <section class="card">
       <form id="form">
-        <div class="drop"><strong>Select a brain MRI image</strong><small>JPEG or PNG · up to 15 MB</small><input id="file" type="file" accept="image/jpeg,image/png,image/webp" required></div>
+        <div class="drop"><strong>Select a brain MRI image</strong><small>JPEG, PNG, or WebP · up to 15 MB</small><input id="file" type="file" accept="image/jpeg,image/png,image/webp" required></div>
+        <div class="model-choice"><label for="model-name">Model</label><select id="model-name" name="model_name"><option value="cnn">CNN baseline</option><option value="efficientnet">EfficientNet-B0</option><option value="vit">ViT-Tiny</option></select><small>Each model uses its own saved checkpoint and preprocessing.</small></div>
         <button id="submit" type="submit">Analyze image</button>
       </form>
       <p id="status" role="status"></p>
       <div id="result">
-        <div class="summary"><span>Predicted dataset class · <span id="confidence"></span> model score</span><h2 id="class"></h2></div>
+        <div class="summary"><span id="result-model"></span><h2 id="class"></h2></div>
         <div class="result-grid">
-          <div><h3>Grad-CAM visualization</h3><img id="cam" alt="Grad-CAM overlay showing image regions that influenced the prediction"></div>
+          <div><h3 id="explanation-heading">Model explanation</h3><img id="cam" alt="Grad-CAM overlay showing image regions that influenced the prediction"></div>
           <div><h3>Class scores</h3><div id="scores"></div><p style="color:#617087;font-size:13px">Scores are model outputs, not calibrated clinical probabilities.</p></div>
         </div>
       </div>
     </section>
-    <footer>Four classes: glioma, meningioma, no tumor, and pituitary · CNN baseline</footer>
+    <footer>Four dataset classes: glioma, meningioma, no tumor, and pituitary · academic image/slice classification</footer>
   </main>
   <script>
     const form=document.querySelector('#form'),button=document.querySelector('#submit'),status=document.querySelector('#status'),result=document.querySelector('#result');
@@ -71,12 +76,12 @@
       e.preventDefault(); const file=document.querySelector('#file').files[0]; if(!file)return;
       button.disabled=true; status.textContent='Processing image…'; result.style.display='none';
       try {
-        const body=new FormData(); body.append('file',file);
+        const body=new FormData(); body.append('file',file); body.append('model_name',document.querySelector('#model-name').value);
         const response=await fetch('/predict',{method:'POST',body}); const data=await response.json();
         if(!response.ok)throw new Error(data.detail||'Could not analyze this image.');
         document.querySelector('#class').textContent=data.predicted_class;
-        document.querySelector('#confidence').textContent=(data.confidence*100).toFixed(1)+'%';
-        document.querySelector('#cam').src=data.explanation_image;
+        document.querySelector('#result-model').textContent=data.model+' · '+(data.confidence*100).toFixed(1)+'% model score';
+        document.querySelector('#cam').src=data.explanation_image; document.querySelector('#explanation-heading').textContent=data.explanation_type;
         document.querySelector('#scores').innerHTML=Object.entries(data.probabilities).map(([name,value])=>`<div class="prob"><span>${name}</span><div class="track"><div class="fill" style="width:${(value*100).toFixed(1)}%"></div></div><b>${(value*100).toFixed(1)}%</b></div>`).join('');
         result.style.display='block'; status.textContent='';
       } catch(error) { status.textContent=error.message; }

@@ -52,17 +52,24 @@ An EfficientNet-B0 option fine-tunes ImageNet-pretrained visual features and wri
 python src\train_efficientnet.py --epochs 15 --batch-size 16 --seed 42
 ```
 
-The script writes `models/efficientnet_b0_best.pt` and results under `outputs/efficientnet_b0/`. If training is interrupted after a checkpoint is saved, evaluate that checkpoint without retraining using `python src\evaluate_efficientnet.py`. The evaluator writes the test metrics, per-class report, and confusion matrix under `outputs/efficientnet_b0/`. CPU training can take a long time; use `--batch-size 8` if memory is limited. The web app still uses the CNN checkpoint.
+The script writes `models/efficientnet_b0_best.pt` and results under `outputs/efficientnet_b0/`. If training is interrupted after a checkpoint is saved, evaluate that checkpoint without retraining using `python src\evaluate_efficientnet.py`. The evaluator writes the test metrics, per-class report, and confusion matrix under `outputs/efficientnet_b0/`. CPU training can take a long time; use `--batch-size 8` if memory is limited. The web app lets you choose any model with a local checkpoint.
 ## Web app
 
-After training creates `models/cnn_baseline_best.pt`:
+The web interface lets you choose the CNN baseline, EfficientNet-B0, or ViT-Tiny before uploading a single MRI image. It returns the predicted dataset class, model score, class scores, and an explanation image. CNN and EfficientNet use Grad-CAM over convolutional feature maps; ViT uses Grad-CAM over patch embeddings. Model scores are not calibrated clinical probabilities.
+
+Each model requires its checkpoint in the local `models/` folder:
+
+- `models/cnn_baseline_best.pt`
+- `models/efficientnet_b0_best.pt`
+- `models/vit_tiny_best.pt`
+
+Train the model you want to use with the commands above. The app loads a checkpoint when that model is first selected. Checkpoints are ignored by Git and are not included in a fresh clone.
 
 ```powershell
 python -m uvicorn app.main:app --host 127.0.0.1 --port 8000
 ```
 
-Visit `http://127.0.0.1:8000`. The app accepts one image at a time and returns a class prediction, scores, and a Grad-CAM visualization. Uploaded images are processed in memory and are not saved.
-
+Visit `http://127.0.0.1:8000`. Uploaded images are processed in memory and are not saved.
 ## GitHub
 
 The repository should contain source, documentation, and configuration only. Dataset files, archives, virtual environments, secrets, model weights, and generated results are ignored. To connect and push, use the repository URL from your GitHub page:
