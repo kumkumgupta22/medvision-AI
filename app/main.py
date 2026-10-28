@@ -40,7 +40,7 @@ MODEL_LABELS = {
 }
 MAX_UPLOAD_BYTES = 15 * 1024 * 1024
 DISCLAIMER = (
-    "Academic prototype for brain MRI image/slice classification only. "
+    "Working prototype for brain MRI image/slice classification only. "
     "Not a clinical diagnostic system; do not use this output for patient-care decisions."
 )
 IMAGENET_MEAN = torch.tensor((0.485, 0.456, 0.406)).view(3, 1, 1)

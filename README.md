@@ -1,6 +1,6 @@
 # MediVision AI — Project 604
 
-Academic prototype for **brain MRI image/slice classification** into glioma, meningioma, no tumor, and pituitary classes. This software is not a clinical diagnostic system and must not guide patient care.
+Working prototype for **brain MRI image/slice classification** into glioma, meningioma, no tumor, and pituitary classes. This software is not a clinical diagnostic system and must not guide patient care.
 
 ## Measured results
 
@@ -9,7 +9,7 @@ The current runs produced these actual results on the provided `Testing` split:
 - **CNN baseline:** best validation accuracy 83.33%; held-out test accuracy 75.94%; macro F1 75.25%.
 - **EfficientNet-B0:** the best saved checkpoint was epoch 5 with 99.05% validation accuracy; on the held-out test set it reached **95.38% accuracy** and **95.27% macro F1**. Glioma recall was 82.75% (331/400 correct).
 
-The 97% accuracy target has not been achieved. These are academic image/slice classification results, not clinical performance claims. Both models have now been evaluated on `Testing`; use a new independent external set for any future model selection or confirmation, and do not tune against `Testing`.
+The 97% accuracy target has not been achieved. These are image/slice benchmark results, not clinical performance claims. Both models have now been evaluated on `Testing`; use a new independent external set for any future model selection or confirmation, and do not tune against `Testing`.
 ## Dataset
 
 The expected layout is:
@@ -76,7 +76,7 @@ The `render.yaml` blueprint configures a Python 3.12 web service with `/health` 
 
 The dataset and model checkpoints remain out of GitHub. To enable cloud predictions, place the three trained checkpoint files in a public Hugging Face model repository, then set the Render environment variable `MEDIVISION_MODEL_REPO` to that repository ID. The app downloads only the selected checkpoint on first use and verifies its SHA-256 before loading it. The expected files are `cnn_baseline_best.pt`, `efficientnet_b0_best.pt`, and `vit_tiny_best.pt`.
 
-A public deployment sends uploaded MRI images to Render for processing. The current API handles image bytes in memory and does not save uploads, but this academic prototype is not for clinical use or patient-care decisions. Avoid uploading identifiable patient data.
+A public deployment sends uploaded MRI images to Render for processing. The current API handles image bytes in memory and does not save uploads, but this prototype is not for clinical use or patient-care decisions. Avoid uploading identifiable patient data.
 
 To deploy, connect this GitHub repository to Render, choose **New + → Blueprint**, and let Render read `render.yaml`. Add `MEDIVISION_MODEL_REPO` in the service environment settings after the public model repository is ready. Confirm the deployment plan and any charges before creating or upgrading a service.
 
