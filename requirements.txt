@@ -8,3 +8,4 @@ torchvision>=0.17
 fastapi>=0.110
 uvicorn[standard]>=0.27
 python-multipart>=0.0.9
+huggingface-hub>=0.27

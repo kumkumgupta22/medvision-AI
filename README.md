@@ -70,6 +70,16 @@ python -m uvicorn app.main:app --host 127.0.0.1 --port 8000
 ```
 
 Visit `http://127.0.0.1:8000`. Uploaded images are processed in memory and are not saved.
+## Cloud deployment (Render)
+
+The `render.yaml` blueprint configures a Python 3.12 web service with `/health` as its health check. Render free web services sleep after inactivity, lose local files when they restart, and have 512 MB RAM. PyTorch inference may exceed that memory limit; do not choose a paid plan without reviewing its current price.
+
+The dataset and model checkpoints remain out of GitHub. To enable cloud predictions, place the three trained checkpoint files in a public Hugging Face model repository, then set the Render environment variable `MEDIVISION_MODEL_REPO` to that repository ID. The app downloads only the selected checkpoint on first use and verifies its SHA-256 before loading it. The expected files are `cnn_baseline_best.pt`, `efficientnet_b0_best.pt`, and `vit_tiny_best.pt`.
+
+A public deployment sends uploaded MRI images to Render for processing. The current API handles image bytes in memory and does not save uploads, but this academic prototype is not for clinical use or patient-care decisions. Avoid uploading identifiable patient data.
+
+To deploy, connect this GitHub repository to Render, choose **New + → Blueprint**, and let Render read `render.yaml`. Add `MEDIVISION_MODEL_REPO` in the service environment settings after the public model repository is ready. Confirm the deployment plan and any charges before creating or upgrading a service.
+
 ## GitHub
 
 The repository should contain source, documentation, and configuration only. Dataset files, archives, virtual environments, secrets, model weights, and generated results are ignored. To connect and push, use the repository URL from your GitHub page:

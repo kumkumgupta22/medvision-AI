@@ -2,7 +2,9 @@
 from __future__ import annotations
 
 import base64
+import hashlib
 import io
+import os
 from pathlib import Path
 
 import numpy as np
@@ -18,10 +20,18 @@ from src.medivision_cnn import BrainMRICNN, CLASS_NAMES, IMAGE_SIZE as CNN_IMAGE
 from src.medivision_vit import VisionTransformer, IMAGE_SIZE as VIT_IMAGE_SIZE
 
 ROOT = Path(__file__).resolve().parents[1]
-CHECKPOINTS = {
-    "cnn": ROOT / "models" / "cnn_baseline_best.pt",
-    "efficientnet": ROOT / "models" / "efficientnet_b0_best.pt",
-    "vit": ROOT / "models" / "vit_tiny_best.pt",
+MODEL_DIRECTORY = Path(os.getenv("MEDIVISION_MODEL_DIR", str(ROOT / "models")))
+MODEL_REPO = os.getenv("MEDIVISION_MODEL_REPO", "").strip()
+CHECKPOINT_FILES = {
+    "cnn": "cnn_baseline_best.pt",
+    "efficientnet": "efficientnet_b0_best.pt",
+    "vit": "vit_tiny_best.pt",
+}
+CHECKPOINTS = {name: MODEL_DIRECTORY / filename for name, filename in CHECKPOINT_FILES.items()}
+REMOTE_CHECKPOINT_SHA256 = {
+    "cnn": "2baf90e00c155c3a9ed9eb81d010e7178b6f158cd6d5121606b34695f4393c6e",
+    "efficientnet": "8ec59747c6303b6e11fc208c5a5dd613c1c69da8073dd3a3f23f71f93f95477c",
+    "vit": "e3aa01f66e640e4d57a5980a975b782afd14e72deed81c8130c4bd6bb454e96c",
 }
 MODEL_LABELS = {
     "cnn": "CNN baseline",
@@ -41,18 +51,50 @@ _models: dict[str, nn.Module] = {}
 _device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
 
+def resolve_checkpoint(model_name: str) -> Path:
+    """Load a local checkpoint or fetch the approved, hash-pinned Hugging Face artifact."""
+    checkpoint_path = CHECKPOINTS[model_name]
+    if checkpoint_path.is_file():
+        return checkpoint_path
+    if not MODEL_REPO:
+        raise FileNotFoundError(
+            f"{MODEL_LABELS[model_name]} checkpoint not found. Train it locally or set "
+            "MEDIVISION_MODEL_REPO to a Hugging Face model repository."
+        )
+    try:
+        from huggingface_hub import hf_hub_download
+
+        downloaded_path = Path(
+            hf_hub_download(
+                repo_id=MODEL_REPO,
+                filename=CHECKPOINT_FILES[model_name],
+                repo_type="model",
+            )
+        )
+    except Exception as exc:
+        raise RuntimeError(
+            f"Could not download the {MODEL_LABELS[model_name]} checkpoint from "
+            f"Hugging Face repository '{MODEL_REPO}': {exc}"
+        ) from exc
+
+    digest = hashlib.sha256()
+    with downloaded_path.open("rb") as checkpoint_file:
+        for chunk in iter(lambda: checkpoint_file.read(1024 * 1024), b""):
+            digest.update(chunk)
+    if digest.hexdigest() != REMOTE_CHECKPOINT_SHA256[model_name]:
+        raise RuntimeError(
+            f"The downloaded {MODEL_LABELS[model_name]} checkpoint failed its integrity check."
+        )
+    return downloaded_path
+
+
 def load_model(model_name: str) -> nn.Module:
     if model_name not in CHECKPOINTS:
         raise ValueError("Choose CNN, EfficientNet-B0, or ViT-Tiny.")
     if model_name in _models:
         return _models[model_name]
-    checkpoint_path = CHECKPOINTS[model_name]
-    if not checkpoint_path.is_file():
-        raise FileNotFoundError(
-            f"{MODEL_LABELS[model_name]} checkpoint not found. Train that model first; "
-            "model weights are stored locally and are not included in Git."
-        )
-    checkpoint = torch.load(checkpoint_path, map_location=_device, weights_only=False)
+    checkpoint_path = resolve_checkpoint(model_name)
+    checkpoint = torch.load(checkpoint_path, map_location=_device, weights_only=True)
     if model_name == "cnn":
         if checkpoint.get("architecture") != "BrainMRICNN":
             raise RuntimeError("CNN checkpoint architecture is not supported by this API.")
