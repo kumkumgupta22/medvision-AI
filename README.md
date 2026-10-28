@@ -94,3 +94,20 @@ The dataset and generated reports remain local and are excluded from Git. To rep
 ```powershell
 python src\evaluate_external.py --data data\external_validation\BDNeuro-MRI-V9 --reference-data data\brain_tumor --checkpoint models\efficientnet_b0_best.pt --output outputs\bdneuro_external_validation
 ```
+## Vision Transformer baseline
+
+The first ViT comparison uses a compact **ViT-Tiny trained from scratch** (96×96 grayscale input, 16×16 patches, 64-dimensional embeddings, 3 transformer blocks, 4 attention heads). It uses the same seed-42, stratified 85/15 train/validation split from `Training`; `Testing` is only scored after selecting the best validation-loss checkpoint.
+
+- Best validation accuracy: **76.43%** (epoch 15)
+- Held-out test accuracy: **69.88%**
+- Held-out macro F1: **69.10%**
+
+On the same provided `Testing` split, the recorded CNN baseline is 75.94% accuracy / 75.25% macro F1, and EfficientNet-B0 is 95.38% / 95.27%. The ViT did not outperform these models and none of these results reaches the 97% target. The test split has been used to compare multiple models, so use validation data for future model choices and seek a genuinely independent, patient-level dataset for final generalization claims.
+
+To reproduce the ViT run from the project folder:
+
+```powershell
+python src\train_vit.py --epochs 15 --batch-size 64 --patience 4 --threads 4 --seed 42
+```
+
+The best checkpoint is saved as `models/vit_tiny_best.pt`; histories, metrics, classification report, confusion matrix, and training curves are written under `outputs/vit_tiny/`. These generated files are excluded from Git.
