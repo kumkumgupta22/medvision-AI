@@ -2,10 +2,14 @@
 
 Academic prototype for **brain MRI image/slice classification** into glioma, meningioma, no tumor, and pituitary classes. This software is not a clinical diagnostic system and must not guide patient care.
 
-## Current measured baseline
+## Measured results
 
-The latest CPU run used seed 42 and early-stopped after 7 epochs. Its best checkpoint was epoch 4 with **83.33% validation accuracy**. On the held-out `Testing` split it achieved **75.94% accuracy** and **75.25% macro F1**. A 97% score is a target, not a promise, and has not been achieved. Do not tune against the test split or report unmeasured results as achieved.
+The current runs produced these actual results on the provided `Testing` split:
 
+- **CNN baseline:** best validation accuracy 83.33%; held-out test accuracy 75.94%; macro F1 75.25%.
+- **EfficientNet-B0:** the best saved checkpoint was epoch 5 with 99.05% validation accuracy; on the held-out test set it reached **95.38% accuracy** and **95.27% macro F1**. Glioma recall was 82.75% (331/400 correct).
+
+The 97% accuracy target has not been achieved. These are academic image/slice classification results, not clinical performance claims. Both models have now been evaluated on `Testing`; use a new independent external set for any future model selection or confirmation, and do not tune against `Testing`.
 ## Dataset
 
 The expected layout is:
@@ -48,7 +52,7 @@ An EfficientNet-B0 option fine-tunes ImageNet-pretrained visual features and wri
 python src\train_efficientnet.py --epochs 15 --batch-size 16 --seed 42
 ```
 
-The script uses the same deterministic stratified validation split and held-out test set. It writes `models/efficientnet_b0_best.pt` and results under `outputs/efficientnet_b0/`. On CPU this can take a long time; use `--batch-size 8` if memory is limited. The current web app uses the baseline CNN checkpoint; compare the actual held-out metrics before changing the serving model. No accuracy target is guaranteed.
+The script writes `models/efficientnet_b0_best.pt` and results under `outputs/efficientnet_b0/`. If training is interrupted after a checkpoint is saved, evaluate that checkpoint without retraining using `python src\evaluate_efficientnet.py`. The evaluator writes the test metrics, per-class report, and confusion matrix under `outputs/efficientnet_b0/`. CPU training can take a long time; use `--batch-size 8` if memory is limited. The web app still uses the CNN checkpoint.
 ## Web app
 
 After training creates `models/cnn_baseline_best.pt`:
@@ -74,5 +78,7 @@ git push -u origin main
 ```
 
 Review `git status` before committing to confirm no data, weights, or secrets are staged.
+
+
 
 
