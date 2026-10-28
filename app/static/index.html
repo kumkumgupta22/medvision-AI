@@ -3,89 +3,229 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#f7f7ff">
   <title>MediVision AI · MRI Slice Classification</title>
   <style>
-    :root { color-scheme: light; --ink:#18253b; --muted:#617087; --blue:#3268e8; --pale:#eef3ff; --line:#dce4ef; }
-    * { box-sizing:border-box; }
-    body { margin:0; background:#f5f7fb; color:var(--ink); font:16px/1.5 system-ui,-apple-system,"Segoe UI",sans-serif; }
-    header { padding:25px max(24px,calc((100% - 1040px)/2)); background:#fff; border-bottom:1px solid var(--line); }
-    .brand { font-weight:750; letter-spacing:.02em; font-size:19px; }
-    .brand span { color:var(--blue); }
-    main { width:min(920px,calc(100% - 32px)); margin:46px auto; }
-    .intro { margin-bottom:27px; }
-    .eyebrow { color:var(--blue); text-transform:uppercase; font-size:12px; font-weight:750; letter-spacing:.12em; }
-    h1 { margin:7px 0 8px; font-size:clamp(28px,4vw,40px); line-height:1.15; }
-    .intro p { margin:0; color:var(--muted); max-width:660px; }
-    .notice { background:#fff8e7; border:1px solid #f0d99f; border-radius:12px; padding:14px 16px; color:#644b12; margin:22px 0; font-size:14px; }
-    .card { background:#fff; border:1px solid var(--line); border-radius:18px; padding:25px; box-shadow:0 8px 32px #20345b0a; }
-    .drop { border:1.5px dashed #aab9d2; background:#fbfcff; border-radius:13px; padding:28px; text-align:center; }
-    .drop strong { display:block; font-size:17px; margin-bottom:5px; }
-    .drop small { color:var(--muted); }
-    input[type=file] { display:block; width:min(100%,420px); margin:18px auto 0; color:var(--muted); }
-    .model-choice { margin-top:18px; }
-    .model-choice label { display:block; font-weight:700; margin-bottom:7px; }
-    .model-choice select { width:100%; border:1px solid var(--line); border-radius:9px; padding:11px 12px; background:#fff; color:var(--ink); font:inherit; }
-    .model-choice small { display:block; margin-top:5px; color:var(--muted); }
-    button { margin-top:20px; width:100%; border:0; border-radius:10px; padding:13px 18px; color:#fff; background:var(--blue); font-size:15px; font-weight:700; cursor:pointer; }
-    button:disabled { opacity:.6; cursor:wait; }
-    #status { min-height:24px; margin:14px 0 0; text-align:center; color:var(--muted); }
-    #result { display:none; margin-top:22px; }
-    .summary { background:var(--pale); border-radius:12px; padding:17px 19px; }
-    .summary span { color:var(--muted); font-size:13px; }
-    .summary h2 { margin:2px 0 0; font-size:24px; text-transform:capitalize; }
-    .result-grid { display:grid; grid-template-columns:1fr 1fr; gap:18px; margin-top:18px; }
-    .result-grid img { width:100%; border-radius:12px; border:1px solid var(--line); }
-    .result-grid h3 { margin:0 0 10px; font-size:16px; }
-    .prob { display:grid; grid-template-columns:95px 1fr 48px; gap:9px; align-items:center; margin:11px 0; font-size:13px; text-transform:capitalize; }
-    .track { background:#e8edf6; height:9px; overflow:hidden; border-radius:9px; }
-    .fill { background:var(--blue); height:100%; }
-    .prob b { text-align:right; font-variant-numeric:tabular-nums; }
-    footer { color:var(--muted); font-size:13px; margin-top:20px; text-align:center; }
-    @media(max-width:650px) { main{margin:28px auto}.card{padding:16px}.result-grid{grid-template-columns:1fr}header{padding:18px 20px} }
+    :root {
+      color-scheme: light;
+      --ink: #17233b;
+      --muted: #64718a;
+      --blue: #5365ee;
+      --blue-dark: #3f4fd1;
+      --teal: #36bca5;
+      --coral: #ff876f;
+      --yellow: #ffc85c;
+      --line: #e4e7f4;
+      --paper: #fff;
+      --wash: #f7f7ff;
+      --shadow: 0 22px 65px #26346b12;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      min-height: 100vh;
+      color: var(--ink);
+      font: 16px/1.55 "Aptos", "Segoe UI", system-ui, sans-serif;
+      background:
+        radial-gradient(ellipse at 8% 10%, #ffe9de 0, transparent 27rem),
+        radial-gradient(ellipse at 92% 15%, #e0e7ff 0, transparent 30rem),
+        linear-gradient(180deg, #faf9ff, #f5f8ff 58%, #f8fbff);
+    }
+    header { width: min(1160px, calc(100% - 40px)); margin: auto; padding: 22px 0; }
+    .topbar { display:flex; align-items:center; justify-content:space-between; gap:20px; }
+    .brand { display:flex; align-items:center; gap:11px; font-size:19px; font-weight:800; letter-spacing:-.04em; }
+    .brand-mark { display:grid; place-items:center; width:39px; height:39px; color:white; background:linear-gradient(140deg,var(--blue),#8d69ea); border-radius:14px; box-shadow:0 8px 18px #5869e944; }
+    .brand-mark svg { width:22px; height:22px; }
+    .brand em { color:var(--blue); font-style:normal; }
+    .top-tag { display:flex; align-items:center; gap:8px; padding:8px 13px; border:1px solid #e9e6f5; border-radius:999px; background:#ffffffb8; color:#626c85; font-size:12px; font-weight:700; letter-spacing:.045em; text-transform:uppercase; }
+    .top-tag i { width:8px;height:8px;border-radius:50%;background:var(--teal);box-shadow:0 0 0 4px #36bca51a; }
+    main { width:min(1160px,calc(100% - 40px)); margin:34px auto 60px; }
+    .hero { position:relative; overflow:hidden; padding:42px 46px; border-radius:30px; background:linear-gradient(112deg,#443fd0 0%,#625be6 54%,#8b65de 100%); color:white; box-shadow:0 24px 50px #5147cd30; }
+    .hero:before,.hero:after { position:absolute; content:""; border:1px solid #ffffff22; border-radius:50%; pointer-events:none; }
+    .hero:before { width:360px;height:360px;right:-90px;top:-220px;box-shadow:0 0 0 34px #ffffff09,0 0 0 70px #ffffff08; }
+    .hero:after { width:260px;height:260px;right:170px;bottom:-220px;box-shadow:0 0 0 32px #ffffff0a; }
+    .hero-content { position:relative; z-index:1; max-width:720px; }
+    .eyebrow { display:inline-flex; align-items:center; gap:8px; padding:7px 11px; border:1px solid #ffffff42; border-radius:999px; color:#f2efff; background:#ffffff12; font-size:12px; font-weight:750; letter-spacing:.08em; text-transform:uppercase; }
+    .eyebrow span { color:#ffda84; font-size:15px; }
+    h1 { margin:17px 0 12px; max-width:700px; font-size:clamp(34px,5.5vw,57px); line-height:1.04; letter-spacing:-.055em; }
+    .hero p { max-width:650px; margin:0; color:#eeedff; font-size:17px; }
+    .hero-chips { display:flex;flex-wrap:wrap;gap:9px;margin-top:24px; }
+    .hero-chips span { padding:7px 12px;border-radius:999px;background:#ffffff19;color:#fff;font-size:12px;font-weight:650; }
+    .notice { display:flex;align-items:flex-start;gap:13px;margin:20px 0 25px;padding:15px 18px;border:1px solid #f4dfad;border-radius:16px;background:#fffaf0;color:#674d12;font-size:13px; }
+    .notice-icon { flex:0 0 25px;display:grid;place-items:center;width:25px;height:25px;border-radius:9px;background:#ffedc2;color:#94620b;font-weight:900; }
+    .notice strong { display:block;margin-bottom:2px;color:#4e3b0d;font-size:14px; }
+    .workspace { display:grid;grid-template-columns:minmax(0,1.02fr) minmax(320px,.98fr);gap:22px;align-items:stretch; }
+    .card { min-width:0;padding:25px;border:1px solid #e5e7f1;border-radius:24px;background:#ffffffed;box-shadow:var(--shadow); }
+    .card-heading { display:flex;align-items:flex-start;gap:13px;margin-bottom:20px; }
+    .heading-icon { flex:0 0 42px;display:grid;place-items:center;width:42px;height:42px;border-radius:14px;background:#eeefff;color:var(--blue); }
+    .heading-icon svg { width:21px;height:21px; }
+    h2 { margin:0;font-size:20px;line-height:1.25;letter-spacing:-.025em; }
+    .subheading { margin:4px 0 0;color:var(--muted);font-size:13px; }
+    .drop { position:relative;display:grid;place-items:center;min-height:196px;padding:22px;border:1.5px dashed #b8bdf3;border-radius:19px;background:linear-gradient(145deg,#f7f6ff,#f4fbff);text-align:center;transition:.18s ease; }
+    .drop.dragging { border-color:var(--blue);background:#efefff;transform:scale(1.01); }
+    .upload-icon { display:grid;place-items:center;width:51px;height:51px;margin:0 auto 12px;border-radius:17px;background:#fff;color:var(--blue);box-shadow:0 7px 20px #5a62d51a; }
+    .upload-icon svg { width:25px;height:25px; }
+    .drop strong { display:block;font-size:16px; }
+    .drop small { display:block;margin-top:3px;color:var(--muted);font-size:12px; }
+    .browse { display:inline-flex;align-items:center;gap:7px;margin-top:15px;padding:9px 15px;border:0;border-radius:11px;background:#fff;color:var(--blue-dark);box-shadow:0 4px 14px #313f9015;font:inherit;font-size:13px;font-weight:750;cursor:pointer; }
+    .browse:hover { background:#f2f2ff; }
+    input[type=file] { position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;clip-path:inset(50%); }
+    input[type=file]:focus-visible + label { outline:3px solid #ffbd52;outline-offset:3px; }
+    .file-name { min-height:21px;margin:9px 0 0;color:var(--muted);font-size:12px;text-align:center;overflow-wrap:anywhere; }
+    .model-choice { margin-top:19px; }
+    .model-choice label { display:block;margin-bottom:7px;font-size:13px;font-weight:750; }
+    .select-wrap { position:relative; }
+    .model-choice select { width:100%;appearance:none;padding:12px 42px 12px 13px;border:1px solid var(--line);border-radius:12px;background:#fff;color:var(--ink);font:inherit;font-size:14px; }
+    .select-wrap:after { position:absolute;right:15px;top:50%;content:"⌄";color:var(--blue);font-size:18px;transform:translateY(-58%);pointer-events:none; }
+    .model-choice small { display:block;margin-top:7px;color:var(--muted);font-size:12px; }
+    .analyze { display:flex;align-items:center;justify-content:center;gap:9px;width:100%;margin-top:18px;padding:14px 18px;border:0;border-radius:13px;color:#fff;background:linear-gradient(100deg,#4e5ee8,#7657df);box-shadow:0 10px 19px #5c58df35;font:inherit;font-size:14px;font-weight:800;cursor:pointer;transition:transform .16s ease,box-shadow .16s ease; }
+    .analyze:hover:not(:disabled) { transform:translateY(-2px);box-shadow:0 13px 23px #5c58df46; }
+    .analyze:disabled { opacity:.68;cursor:wait; }
+    .analyze svg { width:17px;height:17px; }
+    #status { min-height:22px;margin:10px 0 0;color:var(--muted);font-size:13px;text-align:center; }
+    .preview-card { position:relative;display:flex;flex-direction:column;min-height:100%;overflow:hidden;background:linear-gradient(155deg,#fff,#f5f8ff); }
+    .preview-card:after { position:absolute;right:-100px;bottom:-125px;width:250px;height:250px;border-radius:50%;background:#ffcf7b26;content:"";pointer-events:none; }
+    .preview-art { position:relative;display:grid;flex:1;place-items:center;min-height:300px;overflow:hidden;border:1px solid #eceeff;border-radius:19px;background:radial-gradient(ellipse at 50% 48%,#eff0ff 0,#f5f8ff 52%,#fff 100%); }
+    .orbit { position:absolute;width:220px;height:220px;border:1px solid #cbd0fa;border-radius:50%; }
+    .orbit:before,.orbit:after { position:absolute;inset:21px;border:1px solid #dce0fa;border-radius:50%;content:""; }
+    .orbit:after { inset:45px;border-style:dashed;border-color:#d5d9f6; }
+    .brain { position:relative;z-index:1;display:grid;place-items:center;width:133px;height:133px;border:1px solid #fff;border-radius:44px;background:linear-gradient(145deg,#fff,#eeefff);color:#655fe0;box-shadow:0 16px 42px #5156b51c;transform:rotate(-7deg); }
+    .brain svg { width:69px;height:69px;transform:rotate(7deg); }
+    .spark { position:absolute;z-index:2;display:grid;place-items:center;width:35px;height:35px;border-radius:13px;background:#fff;box-shadow:0 7px 19px #5156b51c;color:var(--blue);font-size:17px; }
+    .spark.one { top:20%;left:22%;color:#f49a49;transform:rotate(-11deg); }
+    .spark.two { right:19%;bottom:22%;color:#26a88f;transform:rotate(9deg); }
+    .preview-caption { position:relative;z-index:1;margin:15px 0 0;color:var(--muted);font-size:13px;text-align:center; }
+    .result { display:none;margin-top:24px;padding:24px;border:1px solid #e4e7f3;border-radius:24px;background:#fff;box-shadow:var(--shadow); }
+    .result-top { display:flex;align-items:center;justify-content:space-between;gap:14px;flex-wrap:wrap;padding:18px 20px;border-radius:17px;background:linear-gradient(110deg,#f0f0ff,#effaff); }
+    .result-tag { color:var(--muted);font-size:12px;font-weight:700; }
+    .summary h2 { margin-top:3px;font-size:27px;text-transform:capitalize; }
+    .score-pill { padding:8px 12px;border:1px solid #dcdfff;border-radius:999px;background:#fff;color:#4b53c6;font-size:13px;font-weight:800; }
+    .result-grid { display:grid;grid-template-columns:minmax(0,1.05fr) minmax(280px,.95fr);gap:24px;margin-top:20px; }
+    .result-grid h3 { margin:0 0 11px;font-size:15px;letter-spacing:-.01em; }
+    #cam { display:block;width:100%;max-height:480px;object-fit:contain;border:1px solid var(--line);border-radius:16px;background:#f3f5fa; }
+    .prob { display:grid;grid-template-columns:100px minmax(40px,1fr) 51px;gap:10px;align-items:center;margin:13px 0;font-size:13px;text-transform:capitalize; }
+    .track { height:9px;overflow:hidden;border-radius:99px;background:#e9ecf6; }
+    .fill { height:100%;min-width:2px;border-radius:inherit;background:linear-gradient(90deg,var(--blue),#9270ed); }
+    .prob b { text-align:right;font-variant-numeric:tabular-nums; }
+    .score-note { margin:17px 0 0;color:var(--muted);font-size:12px; }
+    footer { display:flex;justify-content:center;gap:8px;flex-wrap:wrap;margin:24px auto 0;color:var(--muted);font-size:12px;text-align:center; }
+    footer .dot { color:var(--coral); }
+    @media(max-width:760px) { .workspace{grid-template-columns:1fr}.preview-card{min-height:350px}.preview-art{min-height:270px}.result-grid{grid-template-columns:1fr} }
+    @media(max-width:520px) { header,main{width:calc(100% - 26px)}header{padding:15px 0}main{margin:18px auto 38px}.top-tag{font-size:10px;padding:7px 9px}.hero{padding:30px 23px;border-radius:23px}.hero p{font-size:15px}.card,.result{padding:18px;border-radius:20px}.drop{min-height:181px;padding:18px}.notice{font-size:12px;padding:13px}.prob{grid-template-columns:82px minmax(35px,1fr) 45px;gap:7px} }
+    @media(prefers-reduced-motion:reduce) { *,*:before,*:after{scroll-behavior:auto!important;transition:none!important} }
   </style>
 </head>
 <body>
-  <header><div class="brand">MediVision <span>AI</span></div></header>
+  <header>
+    <div class="topbar">
+      <div class="brand"><span class="brand-mark" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 3v18M3 12h18"/><circle cx="12" cy="12" r="8.5"/></svg></span><span>MediVision <em>AI</em></span></div>
+      <div class="top-tag"><i aria-hidden="true"></i> Academic prototype</div>
+    </div>
+  </header>
   <main>
-    <section class="intro">
-      <div class="eyebrow">Project 604 · Academic prototype</div>
-      <h1>Brain MRI slice classification</h1>
-      <p>Choose a model and upload one MRI image to see its predicted dataset class, class scores, and an explanation visualization.</p>
-    </section>
-    <div class="notice"><strong>Research use only.</strong> This prototype classifies individual images or slices and is not a clinical diagnostic system. Do not use its output to make patient-care decisions.</div>
-    <section class="card">
-      <form id="form">
-        <div class="drop"><strong>Select a brain MRI image</strong><small>JPEG, PNG, or WebP · up to 15 MB</small><input id="file" type="file" accept="image/jpeg,image/png,image/webp" required></div>
-        <div class="model-choice"><label for="model-name">Model</label><select id="model-name" name="model_name"><option value="cnn">CNN baseline</option><option value="efficientnet">EfficientNet-B0</option><option value="vit">ViT-Tiny</option></select><small>Each model uses its own saved checkpoint and preprocessing.</small></div>
-        <button id="submit" type="submit">Analyze image</button>
-      </form>
-      <p id="status" role="status"></p>
-      <div id="result">
-        <div class="summary"><span id="result-model"></span><h2 id="class"></h2></div>
-        <div class="result-grid">
-          <div><h3 id="explanation-heading">Model explanation</h3><img id="cam" alt="Grad-CAM overlay showing image regions that influenced the prediction"></div>
-          <div><h3>Class scores</h3><div id="scores"></div><p style="color:#617087;font-size:13px">Scores are model outputs, not calibrated clinical probabilities.</p></div>
-        </div>
+    <section class="hero">
+      <div class="hero-content">
+        <div class="eyebrow"><span aria-hidden="true">✦</span> Project 604 · Brain MRI</div>
+        <h1>A clearer view of image classification</h1>
+        <p>Explore how a deep-learning model classifies one MRI image or slice, with class scores and a visual explanation.</p>
+        <div class="hero-chips"><span>4 dataset classes</span><span>CNN · EfficientNet · ViT</span><span>Grad-CAM view</span></div>
       </div>
     </section>
-    <footer>Four dataset classes: glioma, meningioma, no tumor, and pituitary · academic image/slice classification</footer>
+    <div class="notice" role="note"><span class="notice-icon" aria-hidden="true">!</span><div><strong>Research use only</strong>This prototype classifies individual images or slices. It is not a clinical diagnostic system; do not use its output to make patient-care decisions.</div></div>
+
+    <div class="workspace">
+      <section class="card" aria-labelledby="upload-title">
+        <div class="card-heading"><span class="heading-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M12 16V4m0 0L7.5 8.5M12 4l4.5 4.5"/><path d="M5 14v5a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1v-5"/></svg></span><div><h2 id="upload-title">Start with an MRI image</h2><p class="subheading">Choose a file and model to explore the prediction.</p></div></div>
+        <form id="form">
+          <div class="drop" id="drop-zone">
+            <div><span class="upload-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="3" width="18" height="18" rx="4"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="m21 15-5-5L5 21"/></svg></span><strong>Drop your image here</strong><small>JPEG, PNG, or WebP · up to 15 MB</small><input id="file" name="file" type="file" accept="image/jpeg,image/png,image/webp" required><label class="browse" for="file"><span aria-hidden="true">＋</span> Choose image</label><p class="file-name" id="file-name" aria-live="polite">No image selected yet</p></div>
+          </div>
+          <div class="model-choice"><label for="model-name">Choose a model</label><div class="select-wrap"><select id="model-name" name="model_name"><option value="cnn">CNN baseline</option><option value="efficientnet">EfficientNet-B0</option><option value="vit">ViT-Tiny</option></select></div><small>Each model uses its own checkpoint and image preprocessing.</small></div>
+          <button class="analyze" id="submit" type="submit"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14M13 6l6 6-6 6"/></svg> Analyze image</button>
+        </form>
+        <p id="status" role="status" aria-live="polite"></p>
+      </section>
+
+      <aside class="card preview-card" aria-label="Image analysis preview">
+        <div class="card-heading"><span class="heading-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M12 3v3m0 12v3M3 12h3m12 0h3M5.64 5.64l2.12 2.12m8.48 8.48 2.12 2.12m0-12.72-2.12 2.12m-8.48 8.48-2.12 2.12"/><circle cx="12" cy="12" r="5"/></svg></span><div><h2>See what the model notices</h2><p class="subheading">A visual guide to the image-level workflow.</p></div></div>
+        <div class="preview-art" aria-hidden="true"><div class="orbit"></div><span class="spark one">✦</span><span class="spark two">✚</span><span class="brain"><svg viewBox="0 0 64 64" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round"><path d="M31.8 12.5c-3.6-5.1-12.4-4.2-14.3 2.5-6.9.2-10.6 7.7-7 13-4.8 5.5-2.4 13.6 3.8 15.5-.4 6.7 5.6 11.5 11.9 9.5 1.3 4.9 4.6 7 5.8 7z"/><path d="M32.2 12.5c3.6-5.1 12.4-4.2 14.3 2.5 6.9.2 10.6 7.7 7 13 4.8 5.5 2.4 13.6-3.8 15.5.4 6.7-5.6 11.5-11.9 9.5-1.3 4.9-4.6 7-5.8 7z"/><path d="M20 20c4-1 7 2 7 5m-12 8c4-2 8 0 9 4m17-17c-4-1-7 2-7 5m12 8c-4-2-8 0-9 4M25 45c2-2 5-2 7 0m7 0c-2-2-5-2-7 0M32 13v46"/></svg></span></div>
+        <p class="preview-caption">Upload an image to reveal its predicted class and explanation.</p>
+      </aside>
+    </div>
+
+    <section class="result" id="result" aria-live="polite">
+      <div class="result-top"><div class="summary"><span class="result-tag" id="result-model"></span><h2 id="class"></h2></div><span class="score-pill" id="confidence-pill"></span></div>
+      <div class="result-grid"><div><h3 id="explanation-heading">Model explanation</h3><img id="cam" alt="Model explanation overlay for the uploaded MRI image"></div><div><h3>Class scores</h3><div id="scores"></div><p class="score-note">Scores are model outputs, not calibrated clinical probabilities.</p></div></div>
+    </section>
+    <footer><span>Glioma</span><span class="dot">✦</span><span>Meningioma</span><span class="dot">✦</span><span>No tumor</span><span class="dot">✦</span><span>Pituitary</span><span>· Academic image/slice classification</span></footer>
   </main>
   <script>
-    const form=document.querySelector('#form'),button=document.querySelector('#submit'),status=document.querySelector('#status'),result=document.querySelector('#result');
-    form.addEventListener('submit',async e=>{
-      e.preventDefault(); const file=document.querySelector('#file').files[0]; if(!file)return;
-      button.disabled=true; status.textContent='Processing image…'; result.style.display='none';
+    const form = document.querySelector('#form');
+    const fileInput = document.querySelector('#file');
+    const button = document.querySelector('#submit');
+    const status = document.querySelector('#status');
+    const result = document.querySelector('#result');
+    const dropZone = document.querySelector('#drop-zone');
+    const fileName = document.querySelector('#file-name');
+
+    function showFile(file) {
+      fileName.textContent = file ? `${file.name} · ${(file.size / (1024 * 1024)).toFixed(2)} MB` : 'No image selected yet';
+    }
+    fileInput.addEventListener('change', () => showFile(fileInput.files[0]));
+    for (const eventName of ['dragenter', 'dragover']) {
+      dropZone.addEventListener(eventName, event => { event.preventDefault(); dropZone.classList.add('dragging'); });
+    }
+    for (const eventName of ['dragleave', 'drop']) {
+      dropZone.addEventListener(eventName, event => { event.preventDefault(); dropZone.classList.remove('dragging'); });
+    }
+    dropZone.addEventListener('drop', event => {
+      const file = event.dataTransfer.files[0];
+      if (!file) return;
+      const transfer = new DataTransfer();
+      transfer.items.add(file);
+      fileInput.files = transfer.files;
+      showFile(file);
+    });
+
+    form.addEventListener('submit', async event => {
+      event.preventDefault();
+      const file = fileInput.files[0];
+      if (!file) return;
+      button.disabled = true;
+      status.textContent = 'Preparing the image for analysis…';
+      result.style.display = 'none';
       try {
-        const body=new FormData(); body.append('file',file); body.append('model_name',document.querySelector('#model-name').value);
-        const response=await fetch('/predict',{method:'POST',body}); const data=await response.json();
-        if(!response.ok)throw new Error(data.detail||'Could not analyze this image.');
-        document.querySelector('#class').textContent=data.predicted_class;
-        document.querySelector('#result-model').textContent=data.model+' · '+(data.confidence*100).toFixed(1)+'% model score';
-        document.querySelector('#cam').src=data.explanation_image; document.querySelector('#explanation-heading').textContent=data.explanation_type;
-        document.querySelector('#scores').innerHTML=Object.entries(data.probabilities).map(([name,value])=>`<div class="prob"><span>${name}</span><div class="track"><div class="fill" style="width:${(value*100).toFixed(1)}%"></div></div><b>${(value*100).toFixed(1)}%</b></div>`).join('');
-        result.style.display='block'; status.textContent='';
-      } catch(error) { status.textContent=error.message; }
-      finally { button.disabled=false; }
+        const body = new FormData();
+        body.append('file', file);
+        body.append('model_name', document.querySelector('#model-name').value);
+        const response = await fetch('/predict', { method: 'POST', body });
+        const data = await response.json();
+        if (!response.ok) throw new Error(data.detail || 'Could not analyze this image.');
+
+        document.querySelector('#class').textContent = data.predicted_class;
+        document.querySelector('#result-model').textContent = data.model;
+        document.querySelector('#confidence-pill').textContent = `${(data.confidence * 100).toFixed(1)}% model score`;
+        document.querySelector('#cam').src = data.explanation_image;
+        document.querySelector('#explanation-heading').textContent = data.explanation_type;
+        const scores = document.querySelector('#scores');
+        scores.replaceChildren();
+        for (const [name, value] of Object.entries(data.probabilities)) {
+          const row = document.createElement('div'); row.className = 'prob';
+          const label = document.createElement('span'); label.textContent = name;
+          const track = document.createElement('div'); track.className = 'track';
+          const fill = document.createElement('div'); fill.className = 'fill'; fill.style.width = `${Math.max(0, Math.min(100, value * 100))}%`;
+          track.append(fill);
+          const score = document.createElement('b'); score.textContent = `${(value * 100).toFixed(1)}%`;
+          row.append(label, track, score); scores.append(row);
+        }
+        result.style.display = 'block';
+        status.textContent = '';
+        result.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      } catch (error) {
+        status.textContent = error.message;
+      } finally {
+        button.disabled = false;
+      }
     });
   </script>
 </body>
